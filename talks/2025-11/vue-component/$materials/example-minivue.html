@@ -1,0 +1,39 @@
+<div id="app"></div>
+
+<script src="./scripts/render.js"></script>
+<script src="./scripts/reactivity.js"></script>
+<script src="./scripts/mini-vue.js"></script>
+<script>
+  const App = {
+    setup() {
+      const state = reactive({
+        count: 0,
+      });
+
+      const countX2 = computed(() => {
+        return state.count * 2;
+      });
+
+      onMounted(() => {
+        console.log("app mounted!");
+      });
+
+      return () => {
+        return h("div", null, [
+          h(
+            "button",
+            {
+              onClick() {
+                state.count++;
+              },
+            },
+            "Clicks: " + state.count
+          ),
+          h("span", null, 'Count: ' + countX2.value),
+        ]);
+      };
+    },
+  };
+
+  mountComponent(App, document.querySelector("#app"));
+</script>

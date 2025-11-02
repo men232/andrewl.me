@@ -1,0 +1,21 @@
+<div id="app">
+</div>
+
+<script src="./scripts/render.js"></script>
+<script>
+  const vdom = h("ul", null, [
+    h("li", null, "Task 1"),
+    h("li", null, "Task 2"),
+    h("li", { style: "color: red;" }, "Task 3"),
+  ]);
+
+  mount(vdom, document.querySelector("#app"));
+
+  const vdomNew = h("ul", null, [
+    h("li", null, "Task 1"),
+    h("li", null, "Task 2"),
+    h("li", { style: "color: blue;" }, "Task 3"),
+  ]);
+
+  patch(vdom, vdomNew);
+</script>
