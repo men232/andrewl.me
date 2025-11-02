@@ -1,0 +1,124 @@
+<script src="./scripts/render.js"></script>
+
+<ul id="tasks-native"></ul>
+
+<div id="tasks-vdom"></div>
+
+<div id="result"></div>
+
+<script>
+  const ITEMS_AMOUNT = 10000;
+  const ITEMS_AMOUNT_HALF = Math.floor(ITEMS_AMOUNT / 2);
+  const ITERATIONS = 100;
+
+  const nativeSetup = Array.from({ length: ITEMS_AMOUNT_HALF })
+    .map((_, idx) => `<li>Task ${idx + 1}</li>`)
+    .join("\n");
+
+  let totalNativeTime = 0;
+  let totalNativeReadTime = 0;
+  let totalVdomTime = 0;
+
+  // Actual measurement runs
+  for (let idx = 0; idx < ITERATIONS; idx++) {
+    // Reset state for each iteration
+    document.querySelector("#tasks-native").innerHTML = nativeSetup;
+    document.querySelector("#tasks-vdom").innerHTML = "";
+
+    const [totalTime, readTime] = nativeTest();
+
+    totalNativeTime += totalTime;
+    totalNativeReadTime += readTime;
+
+    totalVdomTime += vdomTest();
+  }
+
+  document.querySelector("#tasks-native").innerHTML = "";
+  document.querySelector("#tasks-vdom").innerHTML = "";
+
+  const avgNative = (totalNativeTime / ITERATIONS).toFixed(3);
+  const avgNativeRead = (totalNativeReadTime / ITERATIONS).toFixed(3);
+  const avgVdom = (totalVdomTime / ITERATIONS).toFixed(3);
+
+  const result = `
+Iterations: ${ITERATIONS}
+
+Native average: ${totalNativeTime.toFixed(2)}ms (avg: ${avgNative}, read: ${avgNativeRead}ms)
+
+VDOM average: ${totalVdomTime.toFixed(2)}ms (avg: ${avgVdom})
+
+Ratio (VDOM/Native): ${(avgVdom / avgNative).toFixed(2)}x
+`.trim();
+
+  document.getElementById("result").innerHTML = result.replaceAll("\n", "<br/>");
+
+  console.log(result);
+
+  /**
+   * VDOM Test
+   **/
+  function vdomTest() {
+    const container = document.querySelector("#tasks-vdom");
+    const vdom = h(
+      "ul",
+      null,
+      Array.from({ length: Math.floor(ITEMS_AMOUNT / 2) }).map((_, idx) => h("li", null, `Task ${idx + 1}`))
+    );
+
+    const newVdom = h(
+      "ul",
+      null,
+      Array.from({ length: ITEMS_AMOUNT }).map((_, idx) => h("li", null, `Task ${idx + 1}`))
+    );
+
+    mount(vdom, container);
+    const t = performance.now();
+    patch(vdom, newVdom);
+
+    return performance.now() - t;
+  }
+
+  /**
+   * Native test
+   **/
+  function nativeTest() {
+    const ul = document.querySelector("#tasks-native");
+    const tasks = Array.from({ length: ITEMS_AMOUNT }).map((_, idx) => `Task ${idx + 1}`);
+
+    return renderNative(ul, tasks);
+  }
+
+  function renderNative(el, tasks) {
+    const t = performance.now();
+    const currentLength = el.children.length;
+    const commonLength = Math.min(tasks.length, currentLength);
+
+    // Patch existed elements
+    for (let idx = 0; idx < commonLength; idx++) {
+      const oldText = el.children[idx].textContent;
+      const newText = tasks[idx];
+
+      if (oldText !== newText) {
+        el.children[idx].textContent = newText;
+      }
+    }
+
+    const read = performance.now() - t;
+
+    // Add new element
+    if (tasks.length > currentLength) {
+      tasks.slice(currentLength).forEach((newText) => {
+        const li = document.createElement("li");
+        li.textContent = newText;
+        el.appendChild(li);
+      });
+    }
+
+    // Remove extra children
+    if (tasks.length < el.children.length) {
+      el.children.slice(tasks.length).forEach((child) => el.removeChild(child));
+    }
+
+    return [performance.now() - t, read];
+  }
+</script>
